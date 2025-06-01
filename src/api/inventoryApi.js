@@ -8,7 +8,7 @@ export const storeInventory = async (formData) => {
         }
     }
     try {
-        const response = await axios.post(`${import.meta.env.VITE_API}/api/inventory`, formDataObject)
+        const response = await axios.post(`${import.meta.env.VITE_BACKEND_API}/inventory`, formDataObject)
         return { data: response.data, error: null };
     } catch (error) {
         return { data: [], error: error }
@@ -23,7 +23,7 @@ export const updateInventory = async (formData) => {
         }
     }
     try {
-        const response = await axios.patch(`${import.meta.env.VITE_API}/api/inventory/${formData.id}`, formDataObject)
+        const response = await axios.patch(`${import.meta.env.VITE_BACKEND_API}/inventory/${formData.id}`, formDataObject)
         return { data: response.data, error: null };
     } catch (error) {
         return { data: [], error: error }
@@ -32,7 +32,7 @@ export const updateInventory = async (formData) => {
 
 export const deleteInventory = async (formData) => {
     try {
-        const response = await axios.delete(`${import.meta.env.VITE_API}/api/inventory/${formData.id}`)
+        const response = await axios.delete(`${import.meta.env.VITE_BACKEND_API}/inventory/${formData.id}`)
         return { data: response.data, error: null };
     } catch (error) {
         return { data: [], error: error }
@@ -41,7 +41,7 @@ export const deleteInventory = async (formData) => {
 
 export const fetchInventory = async () => {
     try {
-        const response = await axios.get(`${import.meta.env.VITE_API}/api/inventory`);
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_API}/inventory`);
         return { data: response.data, error: null };
     } catch (error) {
         return { data: [], error };

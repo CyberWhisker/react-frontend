@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = `${import.meta.env.VITE_API}/api/user`;
+const API_URL = `${import.meta.env.VITE_BACKEND_API}/user`;
 
 export const loginUser = async (formData) => {
     try {
@@ -70,7 +70,7 @@ export const usingGoogle = async (formData) => {
 
 export const fetchUserData = async () => {
     try {
-        const response = await axios.get(API_URL);
+        const response = await axios.get(`${API_URL}`);
         return { data: response.data, error: null };
     } catch (error) {
         return { data: [], error };

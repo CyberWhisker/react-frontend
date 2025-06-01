@@ -1,17 +1,22 @@
 import * as React from 'react';
 import { Outlet } from 'react-router';
-import { DashboardLayout } from '@toolpad/core/DashboardLayout';
+import { DashboardLayout, ThemeSwitcher } from '@toolpad/core/DashboardLayout';
 import { PageContainer } from '@toolpad/core/PageContainer';
 import { Account, AccountPreview } from '@toolpad/core';
 import { Divider, Stack } from '@mui/material';
 import { Logout } from '@mui/icons-material';
 import { AuthContext } from '../context/AuthContext';
 import CustomToast from '../components/CustomToast';
+import NotificationBadge from '../components/NotificationBadge';
 
 export default function Layout() {
     return (
         <DashboardLayout
-            slots={{ toolbarAccount: () => null, sidebarFooter: SidebarFooterAccount }}
+            slots={{
+                toolbarAccount: () => null,
+                sidebarFooter: SidebarFooterAccount,
+                toolbarActions: ToolbarActionsWrapper
+            }}
         >
             <PageContainer>
                 <Outlet />
@@ -87,5 +92,14 @@ function SidebarFooterAccount({ mini }) {
                 },
             }}
         />
+    )
+}
+
+function ToolbarActionsWrapper() {
+    return (
+        <>
+            <NotificationBadge />
+            <ThemeSwitcher />
+        </>
     )
 }

@@ -1,14 +1,12 @@
 import axios from "axios";
 
 export const storeExperience = async (formData) => {
-    const formDataObject = new FormData();
-    for (const key in formData) {
-        if (formData.hasOwnProperty(key)) {
-            formDataObject.append(key, formData[key]);
-        }
-    }
     try {
-        const response = await axios.post(`${import.meta.env.VITE_API}/api/experience`, formDataObject)
+        const response = await axios.post(`${import.meta.env.VITE_BACKEND_API}/experience`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        })
         return { data: response.data, error: null };
     } catch (error) {
         return { data: [], error: error }
@@ -16,15 +14,12 @@ export const storeExperience = async (formData) => {
 }
 
 export const updateExperience = async (formData) => {
-    console.log(formData)
-    const formDataObject = new FormData();
-    for (const key in formData) {
-        if (formData.hasOwnProperty(key)) {
-            formDataObject.append(key, formData[key]);
-        }
-    }
     try {
-        const response = await axios.patch(`${import.meta.env.VITE_API}/api/experience/${formData.id}`, formDataObject)
+        const response = await axios.patch(`${import.meta.env.VITE_BACKEND_API}/experience/${formData.id}`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        })
         return { data: response.data, error: null };
     } catch (error) {
         return { data: [], error: error }
@@ -33,7 +28,7 @@ export const updateExperience = async (formData) => {
 
 export const deleteExperience = async (formData) => {
     try {
-        const response = await axios.delete(`${import.meta.env.VITE_API}/api/experience/${formData.id}`)
+        const response = await axios.delete(`${import.meta.env.VITE_BACKEND_API}/experience/${formData.id}`)
         return { data: response.data, error: null };
     } catch (error) {
         return { data: [], error: error }
@@ -42,7 +37,7 @@ export const deleteExperience = async (formData) => {
 
 export const fetchExperience = async () => {
     try {
-        const response = await axios.get(`${import.meta.env.VITE_API}/api/experience`);
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_API}/experience`);
         return { data: response.data, error: null };
     } catch (error) {
         return { data: [], error };

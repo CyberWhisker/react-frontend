@@ -1,13 +1,12 @@
-import React from 'react';
 import { Box, Typography, Button, Divider } from '@mui/material';
 import { toast } from 'react-toastify';
 import { deleteProject } from '../../../../api/projectApi';
 
 const headerStyle = {
     p: 2,
-    backgroundColor: (theme) => theme.palette.error.main,  // Error color for header
+    backgroundColor: (theme) => theme.palette.error.main,
     color: 'white',
-    borderRadius: '4px 4px 0 0',  // Rounded corners for the top
+    borderRadius: '4px 4px 0 0',
 };
 
 const footerStyle = {

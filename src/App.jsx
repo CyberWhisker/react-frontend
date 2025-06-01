@@ -1,8 +1,10 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { CreditCard, DashboardOutlined, Event, Inventory, Person, Settings, TravelExplore, Web } from '@mui/icons-material';
+import { DashboardOutlined, Event, Message, Person, Settings, Web } from '@mui/icons-material';
 import { ReactRouterAppProvider } from '@toolpad/core/react-router';
 import { AuthContext } from './context/AuthContext';
+import messageSocket from './api/sockets/messageSocket';
+import { useNotification } from './context/NotificationContext';
 
 // Navigation Configurations
 const NAVIGATION_CONFIG = {
@@ -10,6 +12,13 @@ const NAVIGATION_CONFIG = {
     { kind: 'header', title: 'Main items' },
     { title: 'Dashboard', segment: 'dashboard', icon: <DashboardOutlined /> },
     { title: 'Users', segment: 'user', icon: <Person /> },
+    {
+      title: 'Messenger',
+      segment: 'messenger',
+      pattern: 'messenger/:id',
+      icon: <Message />,
+      action: <BadgeMessageCount />
+    },
     { kind: 'header', title: 'Maintenance' },
     { title: 'Projects', segment: 'projects', icon: <Web /> },
     { title: 'Experience', segment: 'experience', icon: <Event /> },
@@ -55,7 +64,6 @@ function App() {
   }), [auth]);
 
   if (isLoading) return <div>Loading...</div>;
-
   return (
     <ReactRouterAppProvider
       navigation={navigation}
@@ -63,9 +71,47 @@ function App() {
       authentication={authentication}
       session={session}
     >
-      <Outlet />
+      <SocketWrapperNotification>
+        <Outlet />
+      </SocketWrapperNotification>
     </ReactRouterAppProvider>
   );
 }
 
 export default App;
+
+
+function SocketWrapperNotification({ children }) {
+  const { auth } = useContext(AuthContext);
+  const { handleGetData } = useNotification();
+  useEffect(() => {
+    if (!auth?._id) return;
+
+    const handleReceiveMessage = (msg) => {
+      if (msg.sender !== auth._id) {
+        handleGetData()
+        toast.info(`💬 New message from ${msg.senderName}`, {
+          position: 'bottom-left',
+          autoClose: 3000,
+        });
+      }
+    };
+
+    messageSocket.on('receive_message', handleReceiveMessage);
+
+    return () => {
+      messageSocket.off('receive_message', handleReceiveMessage);
+    };
+  }, [auth]);
+  return <>{children}</>;
+}
+
+function BadgeMessageCount() {
+  const { total } = useNotification();
+  if (total !== 0) {
+    return (
+      <Chip label={total} color="error" size="small" />
+    )
+  }
+  return
+}

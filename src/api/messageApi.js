@@ -1,8 +1,8 @@
 import axios from "axios";
 
-export const storeTechStack = async (formData) => {
+export const storeMessage = async (formData) => {
     try {
-        const response = await axios.post(`${import.meta.env.VITE_BACKEND_API}/techStack`, formData, {
+        const response = await axios.post(`${import.meta.env.VITE_BACKEND_API}/message`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
@@ -13,9 +13,9 @@ export const storeTechStack = async (formData) => {
     }
 }
 
-export const updateTechStack = async (formData) => {
+export const updateMessage = async (formData) => {
     try {
-        const response = await axios.patch(`${import.meta.env.VITE_BACKEND_API}/techStack/${formData.id}`, formData, {
+        const response = await axios.patch(`${import.meta.env.VITE_BACKEND_API}/message/${formData.id}`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
@@ -26,18 +26,18 @@ export const updateTechStack = async (formData) => {
     }
 }
 
-export const deleteTechStack = async (formData) => {
+export const deleteMessage = async (formData) => {
     try {
-        const response = await axios.delete(`${import.meta.env.VITE_BACKEND_API}/techStack/${formData.id}`)
+        const response = await axios.delete(`${import.meta.env.VITE_BACKEND_API}/message/${formData.id}`)
         return { data: response.data, error: null };
     } catch (error) {
         return { data: [], error: error }
     }
 }
 
-export const fetchTechStack = async () => {
+export const fetchMessageByConvoId = async (id) => {
     try {
-        const response = await axios.get(`${import.meta.env.VITE_BACKEND_API}/techStack`);
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_API}/message/convoId/${id}`);
         return { data: response.data, error: null };
     } catch (error) {
         return { data: [], error };

@@ -56,7 +56,7 @@ function CardList({ rows, handleGetData }) {
                                 component="img"
                                 alt={item.title}
                                 height="180"
-                                image={item.image}
+                                src={item.image}
                             />
                             <Divider />
                             <CardContent sx={{ flexGrow: 1, overflow: 'hidden' }}>

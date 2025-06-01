@@ -11,6 +11,8 @@ import AuthLayout from './layouts/auth';
 import { AuthProvider } from './context/AuthContext';
 import { ForgotPassword, Login, NotVerified, Register, ResetPassword, Verify } from './pages/Auth';
 import { Dashboard, TechStack, Users, Projects, Experience } from './pages/Admin';
+import { NotificationProvider } from './context/NotificationContext';
+import Messenger from './pages/Messenger/Messenger';
 
 const router = createBrowserRouter([
   {
@@ -138,6 +140,20 @@ const router = createBrowserRouter([
           },
         ]
       },
+      {
+        path: '/messenger',
+        Component: ProtectedRoute,
+        children: [
+          {
+            path: '',
+            Component: Messenger,
+          },
+          {
+            path: ':id',
+            Component: Messenger,
+          },
+        ]
+      },
     ],
   },
 ]);
@@ -146,7 +162,9 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <GoogleOAuthProvider clientId="1095160726391-43792gti1phme0ni89t8bdov9m1dfkgv.apps.googleusercontent.com">
       <AuthProvider>
-        <RouterProvider router={router} />
+        <NotificationProvider>
+          <RouterProvider router={router} />
+        </NotificationProvider>
       </AuthProvider>
     </GoogleOAuthProvider>
   </StrictMode>,
