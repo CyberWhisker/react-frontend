@@ -3,8 +3,10 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { DashboardOutlined, Event, Message, Person, Settings, Web } from '@mui/icons-material';
 import { ReactRouterAppProvider } from '@toolpad/core/react-router';
 import { AuthContext } from './context/AuthContext';
-import messageSocket from './api/sockets/messageSocket';
 import { useNotification } from './context/NotificationContext';
+import socketApi from './api/sockets/socketApi';
+import { toast } from 'react-toastify';
+import { Chip } from '@mui/material';
 
 // Navigation Configurations
 const NAVIGATION_CONFIG = {
@@ -51,8 +53,9 @@ function App() {
   // Set session when auth changes
   useEffect(() => {
     if (auth) {
+      socketApi.emit('register_user', auth._id);
       setSession({
-        user: { name: auth.name, email: auth.email, image: auth.picture },
+        user: { name: auth.name, email: auth.email, image: auth.image },
       });
     }
   }, [auth]);
@@ -97,10 +100,10 @@ function SocketWrapperNotification({ children }) {
       }
     };
 
-    messageSocket.on('receive_message', handleReceiveMessage);
+    socketApi.on('receive_message', handleReceiveMessage);
 
     return () => {
-      messageSocket.off('receive_message', handleReceiveMessage);
+      socketApi.off('receive_message', handleReceiveMessage);
     };
   }, [auth]);
   return <>{children}</>;

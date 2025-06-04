@@ -1,7 +1,7 @@
 import { io } from "socket.io-client";
 
 const SOCKET_URL = import.meta.env.VITE_BACKEND_API;
-const messageSocket = io(SOCKET_URL, {
+const socketApi = io(SOCKET_URL, {
     // options if needed
 });
 
@@ -20,4 +20,4 @@ export const sendMessage = (message) => {
     socket.emit('send_message', message);
 };
 
-export default messageSocket;
+export default socketApi;

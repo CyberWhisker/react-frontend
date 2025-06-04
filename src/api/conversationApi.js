@@ -9,9 +9,9 @@ export const storeConversation = async (formData) => {
     }
 }
 
-export const deleteConversation = async (formData) => {
+export const deleteConversation = async (id) => {
     try {
-        const response = await axios.delete(`${import.meta.env.VITE_BACKEND_API}/conversation/${formData.id}`)
+        const response = await axios.delete(`${import.meta.env.VITE_BACKEND_API}/conversation/${id}`)
         return { data: response.data, error: null };
     } catch (error) {
         return { data: [], error: error }

@@ -1,12 +1,23 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@mui/material"
+import { deleteConversation } from "../../../api/conversationApi"
+import { toast } from "react-toastify"
+import { useParams } from "react-router"
+import { useEffect, useState } from "react";
 
 
-export default function DeleteModal({ deleteModal, setDeleteModal }) {
+export default function ContactDeleteForm({ open, onClose, setTriggerContact, setContact }) {
+    const { id } = useParams();
     const handleSubmit = async () => {
-        setDeleteModal(false)
+        const { data, error } = await deleteConversation(id)
+        if (data) {
+            setContact(null)
+            setTriggerContact(prev => !prev)
+            toast.success("Convo Deleted")
+        }
+        onClose()
     }
     return (
-        <Dialog open={deleteModal} onClose={() => setDeleteModal(false)} maxWidth="xs">
+        <Dialog open={open} onClose={() => onClose()} maxWidth="xs">
             <DialogTitle bgcolor={'error'}>Confirm Delete</DialogTitle>
             <DialogContent>
                 <Typography>
@@ -14,8 +25,8 @@ export default function DeleteModal({ deleteModal, setDeleteModal }) {
                 </Typography>
             </DialogContent>
             <DialogActions>
-                <Button onClick={() => setDeleteModal(false)}>Cancel</Button>
-                <Button onClick={handleSubmit} color="error" variant="contained">
+                <Button onClick={() => onClose()}>Cancel</Button>
+                <Button onClick={() => handleSubmit()} color="error" variant="contained">
                     Delete
                 </Button>
             </DialogActions>

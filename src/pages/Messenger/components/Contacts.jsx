@@ -1,15 +1,18 @@
-import { Delete, Search } from '@mui/icons-material';
-import { Avatar, Badge, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Divider, IconButton, InputAdornment, List, ListItemAvatar, ListItemButton, ListItemText, TextField, Typography } from '@mui/material';
+import { Add, Search } from '@mui/icons-material';
+import { Avatar, Badge, Box, Chip, Divider, IconButton, InputAdornment, List, ListItemAvatar, ListItemButton, ListItemText, Stack, TextField, Typography } from '@mui/material';
 import { useContext, useEffect, useState } from 'react';
 import { fetchConversationByUserId } from '../../../api/conversationApi';
 import { AuthContext } from '../../../context/AuthContext';
-import { timeAgo } from '../../../../utils/timeAgo';
 import { useNavigate, useParams } from 'react-router';
+import StoreContactForm from '../Forms/ContactStoreForm';
+import { useNotification } from '../../../context/NotificationContext';
 
-export default function Contacts() {
+export default function Contacts({ triggerContact }) {
+    const { messages } = useNotification()
     const { id } = useParams();
     const [contacts, setContacts] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [storeContactModal, setStoreContactModal] = useState(false)
     const { auth } = useContext(AuthContext)
     const navigate = useNavigate();
     // Filter contacts based on search
@@ -20,7 +23,7 @@ export default function Contacts() {
     // Handle functions
     const handleContactSelect = (contactId) => {
         setContacts(prev => prev.map(contact =>
-            contact.id === contactId ? { ...contact, unread: 0 } : contact
+            contact.id === contactId ? { ...contact, unread: false } : contact
         ));
         navigate(`/messenger/${contactId}`)
     };
@@ -42,30 +45,38 @@ export default function Contacts() {
                     participant: otherParticipant,
                 };
             });
-            const formatData = filterData.map((item) => ({
-                name: item.participant.name,
-                email: item.participant.email,
-                id: item._id,
-                image: item.participant.picture,
-                lastMessage: "Test",
-                unread: 2,
-                timestamp: timeAgo(item.createdAt)
-            }))
+            const formatData = filterData.map((item) => {
+                const lastMessage = messages.find((messageData) => messageData.id == item._id)
+                return ({
+                    name: item.participant.name,
+                    email: item.participant.email,
+                    id: item._id,
+                    image: item.participant.picture,
+                    lastMessage: lastMessage?.message || 'No new message',
+                    unread: lastMessage ? true : false,
+                    timestamp: lastMessage?.timestamp
+                })
+            }
+            )
             setContacts(formatData)
         }
     }
 
     useEffect(() => {
         handleGetData();
-    }, [])
+    }, [triggerContact, messages])
     return (
         <Box sx={{ height: '100%' }}>
             {/* Header */}
             <Box sx={{ p: 2 }}>
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-                    Contacts
-                </Typography>
-
+                <Stack direction="row" alignItems="center" justifyContent="space-between" width="100%" mb={1}>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        Contacts
+                    </Typography>
+                    <IconButton color='primary' onClick={() => setStoreContactModal(true)}>
+                        <Add />
+                    </IconButton>
+                </Stack>
                 {/* Search */}
                 <TextField
                     fullWidth
@@ -73,12 +84,14 @@ export default function Contacts() {
                     placeholder="Search conversations..."
                     value={searchTerm}
                     onChange={handleSearchChange}
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <Search color="action" />
-                            </InputAdornment>
-                        ),
+                    slotProps={{
+                        input: {
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <Search color="action" />
+                                </InputAdornment>
+                            ),
+                        }
                     }}
                     sx={{ bgcolor: 'background.paper' }}
                 />
@@ -126,9 +139,9 @@ export default function Contacts() {
                                     <Typography variant="body2" color="text.secondary" noWrap sx={{ flex: 1 }}>
                                         {contact.lastMessage}
                                     </Typography>
-                                    {contact.unread > 0 && (
+                                    {contact.unread && (
                                         <Chip
-                                            label={contact.unread}
+                                            // label={contact.unread}
                                             size="small"
                                             color="primary"
                                             sx={{ ml: 1, height: 20, fontSize: '0.75rem' }}
@@ -140,6 +153,7 @@ export default function Contacts() {
                     </ListItemButton>
                 ))}
             </List>
+            <StoreContactForm open={storeContactModal} close={() => setStoreContactModal(false)} handleGetContact={handleGetData} />
         </Box>
     )
 }

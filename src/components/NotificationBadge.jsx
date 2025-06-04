@@ -44,7 +44,7 @@ export default function NotificationBadge({
     };
 
     const handleNotificationClick = (notification) => {
-        navigate(`/messenger/${notification.sender}`)
+        navigate(`/messenger/${notification.id}`)
         handleClose();
     };
 

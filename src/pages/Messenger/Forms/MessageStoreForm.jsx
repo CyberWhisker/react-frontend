@@ -1,100 +1,117 @@
-import { AttachFile, Send } from '@mui/icons-material'
-import { Box, IconButton, Paper, TextField } from '@mui/material'
+import { AttachFile, Send, UploadFile } from '@mui/icons-material'
+import { Box, IconButton, Input, Paper, styled, TextField, Tooltip } from '@mui/material'
 import { useContext, useState } from 'react'
 import { useParams } from 'react-router'
 import { AuthContext } from '../../../context/AuthContext'
 import { storeMessage } from '../../../api/messageApi'
 import { toast } from 'react-toastify'
 import { timeAgo } from '../../../../utils/timeAgo'
+import socketApi from '../../../api/sockets/socketApi'
+
+const InputContainer = styled(Box)(({ theme }) => ({
+    padding: 16, borderTop: `1px solid ${theme.palette.divider}`,
+    display: 'flex', alignItems: 'center'
+}));
 
 function MessageStoreForm({ setMessages, contact }) {
     const { id } = useParams()
     const { auth } = useContext(AuthContext)
-    const [formData, setFormData] = useState({
-        conversationId: id,
-        text: '',
-        sender: auth._id,
-        readBy: [auth._id],
-    })
+    const [input, setInput] = useState('')
 
-    const handleChange = (e) => {
-        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
-    }
-
-    const handleFileUpload = (event) => {
+    const handleFileUpload = async (event) => {
         const file = event.target.files[0];
         if (file) {
-            console.log('File uploaded:', file.name, file.type, file.size);
 
-            const message = {
-                id: Date.now(),
-                text: `📎 ${file.name}`,
-                sender: 'You',
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                isOwn: true,
-                isFile: true,
-                fileType: file.type,
+            const newMessage = {
+                conversationId: id,
+                file: file,
+                sender: auth._id,
+                readBy: [auth._id],
             };
 
-            setMessages(prev => [...prev, message]);
+            const { data } = await storeMessage(newMessage)
 
-            // Reset file input
+            if (data) {
+                const newData = {
+                    id: data._id,
+                    fileId: data.fileId,
+                    sender: auth._id,
+                    senderName: data.sender == contact._id ? contact.name : 'Anonymous',
+                    timestamp: timeAgo(data.createdAt),
+                };
+                handleSendSocket(newData)
+                setMessages(prev => [...prev, newData]);
+                toast.success("Message Sent")
+            }
+
             event.target.value = '';
         }
     };
 
-    const handleSubmit = async () => {
-        const { data } = await storeMessage(formData)
+    const handleTextSubmit = async () => {
+        if (!input.trim()) return;
+
+        const newMessage = {
+            conversationId: id,
+            text: input,
+            sender: auth._id,
+            readBy: [auth._id],
+        };
+
+        const { data } = await storeMessage(newMessage)
+
         if (data) {
             const newData = {
                 id: data._id,
                 text: data.text,
-                sender: data.sender == contact._id ? contact.name : 'Anonymous',
+                sender: auth._id,
+                senderName: data.sender == contact._id ? contact.name : 'Anonymous',
                 timestamp: timeAgo(data.createdAt),
-                isOwn: data.sender === auth._id,
             };
+            handleSendSocket(data)
             setMessages(prev => [...prev, newData]);
-            setFormData(prev => ({ ...prev, text: '' }))
             toast.success("Message Sent")
         }
     }
 
+    const handleSendSocket = async (data) => {
+
+        const messageData = {
+            id: data._id,
+            conversationId: data.conversationId,
+            receiverId: contact._id,
+            sender: auth._id,
+            senderName: auth.name,
+            text: data.text || 'Sent an Image',
+        };
+
+        socketApi.emit('send_message', messageData);
+    }
+
     return (
-        <Paper sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
-            <form>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <input
-                        accept="*/*"
-                        style={{ display: 'none' }}
-                        id="file-upload"
-                        type="file"
-                        onChange={handleFileUpload}
-                    />
-                    <label htmlFor="file-upload">
-                        <IconButton component="span" color="primary">
-                            <AttachFile />
-                        </IconButton>
-                    </label>
-
-                    <TextField
-                        fullWidth
-                        size="small"
-                        name='text'
-                        placeholder="Type a message..."
-                        value={formData.text}
-                        onChange={handleChange}
-                        sx={{ bgcolor: 'background.paper' }}
-                    />
-
-                    <IconButton
-                        color="primary"
-                        onClick={handleSubmit}
-                        disabled={!formData.text.trim()}
-                    >
-                        <Send />
+        <Paper>
+            <InputContainer>
+                <Tooltip title="Upload File">
+                    <IconButton component="label">
+                        <UploadFile />
+                        <Input
+                            type="file"
+                            onChange={handleFileUpload}
+                            sx={{ display: 'none' }}
+                        />
                     </IconButton>
-                </Box>
-            </form>
+                </Tooltip>
+                <TextField
+                    fullWidth size="small"
+                    placeholder="Type your message..."
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleTextSubmit()}
+                />
+                <IconButton color="primary" onClick={handleTextSubmit}>
+                    <Send />
+                </IconButton>
+            </InputContainer>
         </Paper>
     )
 }

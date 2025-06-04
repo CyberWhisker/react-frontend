@@ -43,3 +43,21 @@ export const fetchMessageByConvoId = async (id) => {
         return { data: [], error };
     }
 };
+
+export const fetchMessagesUnread = async (id) => {
+    try {
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_API}/message/unread/${id}`)
+        return { data: response.data, error: null };
+    } catch (error) {
+        return { data: [], error: error };
+    }
+}
+
+export const markMessageReadBy = async (id, convoId) => {
+    try {
+        const response = await axios.patch(`${import.meta.env.VITE_BACKEND_API}/message/markMessagesAsReadByConversation/${id}/${convoId}`)
+        return { data: response.data, error: null };
+    } catch (error) {
+        return { data: [], error: error };
+    }
+}

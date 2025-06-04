@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { AuthContext } from "./AuthContext";
 import { timeAgo } from "../../utils/timeAgo";
+import { fetchMessagesUnread } from "../api/messageApi";
 
 const NotificationContext = createContext();
 
@@ -13,12 +14,12 @@ export const NotificationProvider = ({ children }) => {
     const handleGetData = async () => {
         if (!auth?._id) return;
         setLoading(true);
-        const error = true
+        const { data, error } = await fetchMessagesUnread(auth._id);
         if (!error) {
             const formattedData = data.map((item) => ({
                 sender: item.senderDetails._id,
                 id: item._id,
-                title: item.senderDetails.firstname + ' ' + item.senderDetails.lastname,
+                title: item.senderDetails.name,
                 message: item.latestUnreadMessage.text || "Sent an Image",
                 unread: true,
                 timestamp: timeAgo(item.latestUnreadMessage.createdAt),

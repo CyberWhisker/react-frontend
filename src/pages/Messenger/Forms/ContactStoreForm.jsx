@@ -23,11 +23,12 @@ import { storeConversation } from '../../../api/conversationApi';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router';
 
-function StoreContactForm({ open, close }) {
+function StoreContactForm({ open, close, handleGetContact }) {
     const [userData, setUserData] = useState([])
     const [oldData, setOldData] = useState([])
     const { auth } = useContext(AuthContext)
     const navigate = useNavigate();
+
     const handleGetData = async () => {
         const { data } = await fetchUserData()
         if (data) {
@@ -43,6 +44,7 @@ function StoreContactForm({ open, close }) {
         }
         const { data } = await storeConversation(formData)
         if (data) {
+            handleGetContact()
             toast.success("Contact Added")
             navigate(`/messenger/${data._id}`)
             close()

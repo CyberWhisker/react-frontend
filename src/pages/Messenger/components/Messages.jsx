@@ -1,42 +1,37 @@
-import { AttachFile, Image, InsertDriveFile, MoreVert, Send } from '@mui/icons-material'
-import { Avatar, Badge, Box, Card, CardContent, Dialog, DialogTitle, IconButton, Paper, TextField, Typography } from '@mui/material'
-import { useContext, useEffect, useState } from 'react'
+import { MoreVert } from '@mui/icons-material'
+import { Avatar, Box, IconButton, Menu, MenuItem, Paper, styled, Typography } from '@mui/material'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { fetchConversationById } from '../../../api/conversationApi';
 import { useParams } from 'react-router';
 import { AuthContext } from '../../../context/AuthContext';
-import { fetchMessageByConvoId, storeMessage } from '../../../api/messageApi';
-import { toast } from 'react-toastify';
+import { fetchMessageByConvoId, markMessageReadBy } from '../../../api/messageApi';
 import { timeAgo } from '../../../../utils/timeAgo';
 import MessageStoreForm from '../Forms/MessageStoreForm';
+import ContactDeleteForm from '../Forms/ContactDeleteForm';
+import socketApi from '../../../api/sockets/socketApi';
+import { useNotification } from '../../../context/NotificationContext';
 
-export default function Messages() {
+const MessagesBox = styled(Box)({
+    flex: 1, padding: 16, overflowY: 'auto',
+    display: 'flex', flexDirection: 'column', gap: 8
+});
+
+const MessageBubble = styled(Paper, {
+    shouldForwardProp: (prop) => prop !== 'fromMe'
+})(({ fromMe, theme }) => ({
+    alignSelf: fromMe ? 'flex-end' : 'flex-start',
+    backgroundColor: fromMe ? theme.palette.primary.main : theme.palette.action.hover,
+    color: fromMe ? theme.palette.primary.contrastText : theme.palette.text.primary,
+    padding: '8px 12px', borderRadius: 12, maxWidth: '60%'
+}));
+
+export default function Messages({ setTriggerContact }) {
+    const { handleGetData: handleGetNotification } = useNotification()
     const { id } = useParams()
     const [contact, setContact] = useState(null);
     const { auth } = useContext(AuthContext)
-    const [newMessage, setNewMessage] = useState('');
     const [messages, setMessages] = useState([])
-
-    const handleFileUpload = (event) => {
-        const file = event.target.files[0];
-        if (file) {
-            console.log('File uploaded:', file.name, file.type, file.size);
-
-            const message = {
-                id: Date.now(),
-                text: `📎 ${file.name}`,
-                sender: 'You',
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                isOwn: true,
-                isFile: true,
-                fileType: file.type,
-            };
-
-            setMessages(prev => [...prev, message]);
-
-            // Reset file input
-            event.target.value = '';
-        }
-    };
+    const containerRef = useRef(null);
 
     const handleGetData = async () => {
         const [
@@ -55,13 +50,14 @@ export default function Messages() {
 
             if (messageData) {
                 const formatData = messageData.map((item) => ({
-                    id: item._id,
-                    text: item.text,
-                    sender: item.sender === filterContact._id ? filterContact.name : 'Anonymous',
+                    ...item,
+                    senderName: item.sender === filterContact._id ? filterContact.name : 'Anonymous',
                     timestamp: timeAgo(item.createdAt),
-                    isOwn: item.sender === auth._id,
+                    fromMe: item.sender === auth._id,
                 }));
                 setMessages(formatData);
+                markMessageReadBy(auth._id, convoData._id)
+                handleGetNotification()
             }
         }
     };
@@ -72,7 +68,28 @@ export default function Messages() {
         } else {
             setContact(null)
         }
+
+        socketApi.off('receive_message', handleReceiveMessage);
+        socketApi.on('receive_message', handleReceiveMessage);
+
+        return () => {
+            socketApi.off('receive_message', handleReceiveMessage);
+        };
     }, [id, auth?._id]);
+
+    const handleReceiveMessage = (msg) => {
+        setTriggerContact(prev => !prev)
+        if (id === msg.conversationId) {
+            setMessages((prev) => [...prev, { ...msg, fromMe: false }]);
+        }
+    };
+
+    useEffect(() => {
+        const container = containerRef.current;
+        if (container) {
+            container.scrollTop = container.scrollHeight;
+        }
+    }, [messages]);
     return (
         <>
             {/* Main Chat Area */}
@@ -91,47 +108,27 @@ export default function Messages() {
                                         {contact.online ? 'Online' : 'Offline'}
                                     </Typography>
                                 </Box>
-                                <IconButton onClick={(e) => handleMenuOpen(e, contact.id)}>
-                                    <MoreVert />
-                                </IconButton>
+                                <BasicMenu setTriggerContact={setTriggerContact} setContact={setContact} />
                             </Box>
                         </Paper>
 
                         {/* Messages Area */}
-                        <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
-                            {messages.map((message) => (
-                                <Box
-                                    key={message.id}
-                                    sx={{
-                                        display: 'flex',
-                                        justifyContent: message.isOwn ? 'flex-end' : 'flex-start',
-                                        mb: 2,
-                                    }}
-                                >
-                                    <Card
-                                        sx={{
-                                            maxWidth: '70%',
-                                            bgcolor: message.isOwn ? 'primary.main' : 'background.paper',
-                                            color: message.isOwn ? 'primary.contrastText' : 'text.primary',
-                                        }}
-                                    >
-                                        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                                            <Typography variant="body2">
-                                                {message.isFile && (
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                                                        {message.fileType?.startsWith('image/') ? <Image sx={{ mr: 1 }} /> : <InsertDriveFile sx={{ mr: 1 }} />}
-                                                    </Box>
-                                                )}
-                                                {message.text}
-                                            </Typography>
-                                            <Typography variant="caption" sx={{ display: 'block', mt: 1, opacity: 0.8 }}>
-                                                {message.timestamp}
-                                            </Typography>
-                                        </CardContent>
-                                    </Card>
-                                </Box>
+                        <MessagesBox ref={containerRef}>
+                            {messages.map((msg, index) => (
+                                <MessageBubble key={index} fromMe={msg.sender === auth._id}>
+                                    {/* Render text if present */}
+                                    {msg?.text && <div>{msg.text}</div>}
+                                    {/* Render image if fileId exists */}
+                                    {msg?.fileId && (
+                                        <img
+                                            src={`${import.meta.env.VITE_BACKEND_API}/file/${msg.fileId}`}
+                                            alt={'attachment'}
+                                            style={{ maxWidth: '100%', marginTop: '8px', borderRadius: '8px' }}
+                                        />
+                                    )}
+                                </MessageBubble>
                             ))}
-                        </Box>
+                        </MessagesBox>
 
                         {/* Message Input */}
                         <MessageStoreForm setMessages={setMessages} contact={contact} />
@@ -151,4 +148,51 @@ export default function Messages() {
             </Box>
         </>
     )
+}
+
+function BasicMenu({ setTriggerContact, setContact }) {
+    const [contactDeleteModal, setContactDeleteModal] = useState(false)
+    const [anchorEl, setAnchorEl] = useState(null);
+    const open = Boolean(anchorEl);
+    const handleClick = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleClose = () => {
+        setAnchorEl(null);
+    };
+
+    const handleDeleteModal = () => {
+        handleClose()
+        setContactDeleteModal(true)
+    }
+
+    return (
+        <>
+            <IconButton
+                aria-label="more"
+                id="basic-button"
+                aria-controls={open ? 'menu' : undefined}
+                aria-expanded={open ? 'true' : undefined}
+                aria-haspopup="true"
+                onClick={handleClick}
+            >
+                <MoreVert />
+            </IconButton>
+            <Menu
+                id="menu"
+                MenuListProps={{
+                    'aria-labelledby': 'basic-button',
+                }}
+                anchorEl={anchorEl}
+                open={open}
+                onClose={handleClose}
+            >
+                <MenuItem onClick={() => handleDeleteModal()}>
+                    Delete Contact
+                </MenuItem>
+            </Menu>
+            <ContactDeleteForm setContact={setContact} open={contactDeleteModal} onClose={() => setContactDeleteModal(false)} setTriggerContact={setTriggerContact} />
+        </>
+    );
 }
